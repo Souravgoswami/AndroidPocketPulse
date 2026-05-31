@@ -1,0 +1,47 @@
+plugins {
+    id "com.android.application"
+}
+
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.withInputStream { keystoreProperties.load(it) }
+}
+
+android {
+    namespace "com.souravgoswami.pocketpulse"
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.souravgoswami.pocketpulse"
+        minSdk 23
+        targetSdk 35
+        versionCode 1
+        versionName "0.0.1"
+    }
+
+    signingConfigs {
+        localRelease {
+            if (keystorePropertiesFile.exists()) {
+                storeFile rootProject.file(keystoreProperties["storeFile"])
+                storePassword keystoreProperties["storePassword"]
+                keyAlias keystoreProperties["keyAlias"]
+                keyPassword keystoreProperties["keyPassword"]
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+            signingConfig keystorePropertiesFile.exists() ? signingConfigs.localRelease : signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
