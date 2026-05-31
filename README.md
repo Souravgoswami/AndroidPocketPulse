@@ -16,6 +16,8 @@ Pocket Pulse cannot stop theft by itself, but it can help you notice your phone'
 
 ## Features
 
+![Main Screen](images/screenshot-main.jpg)
+
 - Configurable vibration duration, burst count, and gap between bursts.
 - Three interval modes:
   - Random between a minimum and maximum time.
