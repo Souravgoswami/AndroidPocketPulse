@@ -20,7 +20,7 @@ final class VibrationPlayer {
         long[] pattern = settings.vibrationPattern();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             VibrationEffect effect = VibrationEffect.createWaveform(pattern, settings.vibrationAmplitudes(), -1);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 VibrationAttributes attributes = new VibrationAttributes.Builder()
                         .setUsage(VibrationAttributes.USAGE_NOTIFICATION)
                         .build();

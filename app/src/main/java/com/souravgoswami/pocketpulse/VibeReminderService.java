@@ -13,6 +13,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.PowerManager;
 
 import java.util.Locale;
 import java.util.Random;
@@ -29,6 +30,7 @@ public class VibeReminderService extends Service implements SharedPreferences.On
     private final Random random = new Random();
     private boolean running;
     private long lastDelayMs;
+    private PowerManager.WakeLock wakeLock;
 
     private final Runnable pulseRunnable = new Runnable() {
         @Override
@@ -70,6 +72,7 @@ public class VibeReminderService extends Service implements SharedPreferences.On
         ReminderSettings.setRunning(this, true);
         ReminderSettings settings = ReminderSettings.load(this);
         long delayMs = settings.nextDelayMs(random);
+        applyWakeLockPolicy(settings);
         startAsForeground(delayMs);
         scheduleNext(delayMs);
         return START_STICKY;
@@ -81,6 +84,7 @@ public class VibeReminderService extends Service implements SharedPreferences.On
             return;
         }
         ReminderSettings settings = ReminderSettings.load(this);
+        applyWakeLockPolicy(settings);
         scheduleNext(settings.nextDelayMs(random));
     }
 
@@ -89,6 +93,7 @@ public class VibeReminderService extends Service implements SharedPreferences.On
         handler.removeCallbacks(pulseRunnable);
         getSharedPreferences(ReminderSettings.PREFS, MODE_PRIVATE)
                 .unregisterOnSharedPreferenceChangeListener(this);
+        releaseWakeLock();
         ReminderSettings.setRunning(this, false);
         running = false;
         super.onDestroy();
@@ -106,6 +111,34 @@ public class VibeReminderService extends Service implements SharedPreferences.On
         handler.postDelayed(pulseRunnable, delayMs);
     }
 
+    private void applyWakeLockPolicy(ReminderSettings settings) {
+        if (settings.highReliabilityMode && running) {
+            acquireWakeLock();
+        } else {
+            releaseWakeLock();
+        }
+    }
+
+    private void acquireWakeLock() {
+        if (wakeLock != null && wakeLock.isHeld()) {
+            return;
+        }
+        PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
+        if (powerManager == null) {
+            return;
+        }
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "PocketPulse:ReminderWakeLock");
+        wakeLock.setReferenceCounted(false);
+        wakeLock.acquire();
+    }
+
+    private void releaseWakeLock() {
+        if (wakeLock != null && wakeLock.isHeld()) {
+            wakeLock.release();
+        }
+        wakeLock = null;
+    }
+
     private void startAsForeground(long delayMs) {
         Notification notification = buildNotification(delayMs);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
@@ -117,6 +150,7 @@ public class VibeReminderService extends Service implements SharedPreferences.On
 
     private void stopReminder() {
         handler.removeCallbacks(pulseRunnable);
+        releaseWakeLock();
         ReminderSettings.setRunning(this, false);
         running = false;
         stopForeground(true);
@@ -125,6 +159,7 @@ public class VibeReminderService extends Service implements SharedPreferences.On
 
     private Notification buildNotification(long delayMs) {
         AppSettings appSettings = AppSettings.load(this);
+        ReminderSettings reminderSettings = ReminderSettings.load(this);
         Intent openIntent = new Intent(this, MainActivity.class);
         PendingIntent openPendingIntent = PendingIntent.getActivity(
                 this,
@@ -148,7 +183,7 @@ public class VibeReminderService extends Service implements SharedPreferences.On
 
         builder.setSmallIcon(R.drawable.ic_stat_vibrate)
                 .setContentTitle(getString(R.string.app_name))
-                .setContentText(formatDelay(delayMs))
+                .setContentText(formatDelay(delayMs, reminderSettings.highReliabilityMode))
                 .setContentIntent(openPendingIntent)
                 .setOngoing(true)
                 .setShowWhen(false)
@@ -190,8 +225,9 @@ public class VibeReminderService extends Service implements SharedPreferences.On
         return flags;
     }
 
-    private static String formatDelay(long delayMs) {
+    private static String formatDelay(long delayMs, boolean highReliabilityMode) {
         long seconds = Math.max(1, delayMs / 1000L);
-        return String.format(Locale.getDefault(), "Next pulse in about %d seconds", seconds);
+        String suffix = highReliabilityMode ? " - screen-off mode on" : "";
+        return String.format(Locale.getDefault(), "Next pulse in about %d seconds%s", seconds, suffix);
     }
 }

@@ -18,6 +18,7 @@ final class ReminderSettings {
     private static final String KEY_RANGE_MAX_SEC = "range_max_sec";
     private static final String KEY_AROUND_BASE_SEC = "around_base_sec";
     private static final String KEY_AROUND_VARIATION_SEC = "around_variation_sec";
+    private static final String KEY_HIGH_RELIABILITY_MODE = "high_reliability_mode";
 
     static final String MODE_RANGE = "range";
     static final String MODE_AROUND = "around";
@@ -32,6 +33,7 @@ final class ReminderSettings {
     final int rangeMaxSec;
     final int aroundBaseSec;
     final int aroundVariationSec;
+    final boolean highReliabilityMode;
 
     ReminderSettings(
             String mode,
@@ -42,7 +44,8 @@ final class ReminderSettings {
             int rangeMinSec,
             int rangeMaxSec,
             int aroundBaseSec,
-            int aroundVariationSec
+            int aroundVariationSec,
+            boolean highReliabilityMode
     ) {
         this.mode = mode;
         this.burstDurationMs = clamp(burstDurationMs, 20, 2000);
@@ -53,10 +56,11 @@ final class ReminderSettings {
         this.rangeMaxSec = clamp(rangeMaxSec, 3, 3600);
         this.aroundBaseSec = clamp(aroundBaseSec, 3, 3600);
         this.aroundVariationSec = clamp(aroundVariationSec, 0, 1800);
+        this.highReliabilityMode = highReliabilityMode;
     }
 
     static ReminderSettings defaults() {
-        return new ReminderSettings(MODE_RANGE, 250, 3, 50, 18, 15, 20, 18, 3);
+        return new ReminderSettings(MODE_RANGE, 250, 3, 50, 18, 15, 20, 18, 3, true);
     }
 
     static ReminderSettings load(Context context) {
@@ -71,7 +75,8 @@ final class ReminderSettings {
                 prefs.getInt(KEY_RANGE_MIN_SEC, defaults.rangeMinSec),
                 prefs.getInt(KEY_RANGE_MAX_SEC, defaults.rangeMaxSec),
                 prefs.getInt(KEY_AROUND_BASE_SEC, defaults.aroundBaseSec),
-                prefs.getInt(KEY_AROUND_VARIATION_SEC, defaults.aroundVariationSec)
+                prefs.getInt(KEY_AROUND_VARIATION_SEC, defaults.aroundVariationSec),
+                prefs.getBoolean(KEY_HIGH_RELIABILITY_MODE, defaults.highReliabilityMode)
         ).normalized();
     }
 
@@ -88,6 +93,7 @@ final class ReminderSettings {
                 .putInt(KEY_RANGE_MAX_SEC, settings.rangeMaxSec)
                 .putInt(KEY_AROUND_BASE_SEC, settings.aroundBaseSec)
                 .putInt(KEY_AROUND_VARIATION_SEC, settings.aroundVariationSec)
+                .putBoolean(KEY_HIGH_RELIABILITY_MODE, settings.highReliabilityMode)
                 .apply();
     }
 
@@ -151,7 +157,8 @@ final class ReminderSettings {
                 min,
                 max,
                 aroundBaseSec,
-                variation
+                variation,
+                highReliabilityMode
         );
     }
 

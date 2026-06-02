@@ -49,6 +49,7 @@ public class MainActivity extends Activity {
     private TextView batteryDetailText;
     private Button startStopButton;
     private Button batterySettingsButton;
+    private CheckBox highReliabilityInput;
     private Button applyButton;
     private Button previewButton;
 
@@ -312,6 +313,26 @@ public class MainActivity extends Activity {
         batterySettingsButton = button("Open battery settings", false);
         batterySettingsButton.setOnClickListener(v -> openBatterySettings());
         card.addView(batterySettingsButton, fullWidthParams());
+
+        TextView reliabilityTitle = text("Screen-off reliability", 15, colorText, Typeface.BOLD);
+        reliabilityTitle.setPadding(0, dp(16), 0, dp(6));
+        card.addView(reliabilityTitle);
+
+        TextView reliabilityDetail = text("Keeps the CPU awake while reminders run, so pulses are less likely to be missed after locking the phone. Uses more battery.", 14, colorMuted, Typeface.NORMAL);
+        reliabilityDetail.setPadding(0, 0, 0, dp(8));
+        card.addView(reliabilityDetail);
+
+        highReliabilityInput = new CheckBox(this);
+        highReliabilityInput.setText("High reliability mode");
+        highReliabilityInput.setTextSize(16);
+        highReliabilityInput.setTextColor(colorText);
+        highReliabilityInput.setButtonTintList(ColorStateList.valueOf(appSettings.accentColor));
+        highReliabilityInput.setChecked(ReminderSettings.load(this).highReliabilityMode);
+        highReliabilityInput.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            saveSettingsFromUi();
+            refreshServiceNotificationIfRunning();
+        });
+        card.addView(highReliabilityInput);
 
         refreshBatterySafeState();
         return card;
@@ -730,7 +751,8 @@ public class MainActivity extends Activity {
                 readInt(rangeMinInput, 15),
                 readInt(rangeMaxInput, 20),
                 readInt(aroundBaseInput, 18),
-                readInt(aroundVariationInput, 3)
+                readInt(aroundVariationInput, 3),
+                highReliabilityInput == null || highReliabilityInput.isChecked()
         );
     }
 
@@ -811,6 +833,9 @@ public class MainActivity extends Activity {
         rangeMaxInput.setText(String.valueOf(settings.rangeMaxSec));
         aroundBaseInput.setText(String.valueOf(settings.aroundBaseSec));
         aroundVariationInput.setText(String.valueOf(settings.aroundVariationSec));
+        if (highReliabilityInput != null) {
+            highReliabilityInput.setChecked(settings.highReliabilityMode);
+        }
     }
 
     private void selectMode(String mode) {
