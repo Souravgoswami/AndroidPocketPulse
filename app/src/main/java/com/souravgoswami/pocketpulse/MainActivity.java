@@ -32,7 +32,7 @@ import android.widget.Toast;
 
 public class MainActivity extends Activity {
     private static final int REQUEST_NOTIFICATIONS = 15;
-    private static final String APP_VERSION = "0.0.1";
+    private static final String APP_VERSION = "0.0.2";
 
     private AppSettings appSettings;
     private int colorPage;
